@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Transfer — Device Monitor</title>
+  <meta name="description" content="Self-hosted personal device monitor: notifications, SMS, calls, location.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="g-logo">
+        <span class="g-blue">G</span><span class="g-red">o</span><span class="g-yellow">o</span><span class="g-blue">g</span><span class="g-green">l</span><span class="g-red">e</span>
+      </div>
+      <span class="logo-product">Transfer</span>
+    </div>
+
+    <div class="sidebar-device">
+      <label class="sidebar-label">Device</label>
+      <select id="deviceSelect" class="device-select">
+        <option value="all">All Devices</option>
+      </select>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-panel="overview">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Overview</span>
+      </button>
+      <button class="nav-item" data-panel="notifications">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span>Notifications</span>
+        <span class="nav-badge" id="badge-notifications">0</span>
+      </button>
+      <button class="nav-item" data-panel="sms">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        <span>SMS</span>
+        <span class="nav-badge" id="badge-sms">0</span>
+      </button>
+      <button class="nav-item" data-panel="calls">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        <span>Calls</span>
+        <span class="nav-badge" id="badge-calls">0</span>
+      </button>
+      <button class="nav-item" data-panel="location">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <span>Location</span>
+        <span class="nav-badge" id="badge-location">0</span>
+      </button>
+      <button class="nav-item" data-panel="settings">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-status">
+      <div class="ws-indicator" id="wsIndicator">
+        <span class="ws-dot" id="wsDot"></span>
+        <span id="wsText">Connecting…</span>
+      </div>
+      <div class="last-sync" id="lastSync">—</div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main-wrapper">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      <h1 class="topbar-title" id="topbarTitle">Overview</h1>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="refreshBtn" title="Refresh">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        <div class="conn-pill" id="connPill">
+          <span class="conn-dot" id="connDot"></span>
+          <span id="connText">Checking…</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ PANELS ═══ -->
+    <main class="panels" id="panels">
+
+      <!-- ── OVERVIEW ── -->
+      <section class="panel active" id="panel-overview">
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-blue">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-val" id="kpiNotif">0</span>
+              <span class="kpi-label">Notifications</span>
+            </div>
+          </div>
+          <div class="kpi-card kpi-green">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-val" id="kpiSms">0</span>
+              <span class="kpi-label">SMS Messages</span>
+            </div>
+          </div>
+          <div class="kpi-card kpi-red">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-val" id="kpiCalls">0</span>
+              <span class="kpi-label">Call Logs</span>
+            </div>
+          </div>
+          <div class="kpi-card kpi-yellow">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
+            <div class="kpi-info">
+              <span class="kpi-val" id="kpiLoc">0</span>
+              <span class="kpi-label">Locations</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-row">
+          <div class="content-card" style="flex:1">
+            <div class="card-header">
+              <h2 class="card-title">Recent Activity</h2>
+              <span class="card-sub">Live feed from device</span>
+            </div>
+            <div id="activityFeed" class="activity-feed">
+              <div class="empty-state">
+                <div class="empty-icon">📡</div>
+                <p class="empty-title">No data yet</p>
+                <p class="empty-desc">Set up the app on your phone and start monitoring.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card device-card">
+            <div class="card-header">
+              <h2 class="card-title">Device Info</h2>
+            </div>
+            <div id="deviceInfoList" class="device-info-list">
+              <p class="empty-desc">No devices synced yet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── NOTIFICATIONS ── -->
+      <section class="panel" id="panel-notifications">
+        <div class="content-card">
+          <div class="card-header">
+            <h2 class="card-title">Notifications</h2>
+            <div class="card-actions">
+              <input type="text" id="notifSearch" class="search-input" placeholder="Search notifications…">
+              <select id="notifAppFilter" class="filter-select">
+                <option value="all">All apps</option>
+              </select>
+              <button class="danger-btn" id="clearNotifBtn">Clear</button>
+            </div>
+          </div>
+          <div id="notifList" class="feed-list">
+            <div class="empty-state">
+              <div class="empty-icon">🔔</div>
+              <p class="empty-title">No notifications yet</p>
+              <p class="empty-desc">Notifications will appear here when synced.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SMS ── -->
+      <section class="panel" id="panel-sms">
+        <div class="content-card">
+          <div class="card-header">
+            <h2 class="card-title">SMS Messages</h2>
+            <div class="card-actions">
+              <input type="text" id="smsSearch" class="search-input" placeholder="Search SMS…">
+              <select id="smsTypeFilter" class="filter-select">
+                <option value="all">All types</option>
+                <option value="inbox">Inbox</option>
+                <option value="sent">Sent</option>
+                <option value="draft">Draft</option>
+              </select>
+              <button class="danger-btn" id="clearSmsBtn">Clear</button>
+            </div>
+          </div>
+          <div id="smsList" class="feed-list">
+            <div class="empty-state">
+              <div class="empty-icon">💬</div>
+              <p class="empty-title">No SMS yet</p>
+              <p class="empty-desc">SMS will appear here after the app syncs.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CALLS ── -->
+      <section class="panel" id="panel-calls">
+        <div class="content-card">
+          <div class="card-header">
+            <h2 class="card-title">Call Logs</h2>
+            <div class="card-actions">
+              <select id="callTypeFilter" class="filter-select">
+                <option value="all">All types</option>
+                <option value="incoming">Incoming</option>
+                <option value="outgoing">Outgoing</option>
+                <option value="missed">Missed</option>
+              </select>
+              <button class="danger-btn" id="clearCallsBtn">Clear</button>
+            </div>
+          </div>
+          <div class="call-stats-row" id="callStats"></div>
+          <div id="callList" class="feed-list">
+            <div class="empty-state">
+              <div class="empty-icon">📞</div>
+              <p class="empty-title">No call logs yet</p>
+              <p class="empty-desc">Call history will appear here after syncing.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── LOCATION ── -->
+      <section class="panel" id="panel-location">
+        <div class="content-card map-card">
+          <div class="card-header">
+            <h2 class="card-title">Location History</h2>
+            <div class="card-actions">
+              <button class="secondary-btn" id="centerMapBtn">Center Map</button>
+              <button class="danger-btn" id="clearLocBtn">Clear History</button>
+            </div>
+          </div>
+          <div id="locationMap" class="location-map"></div>
+          <div id="locTableWrap" class="loc-table-wrap">
+            <table class="data-table" id="locTable">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Latitude</th>
+                  <th>Longitude</th>
+                  <th>Accuracy</th>
+                  <th>Device</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="locTableBody">
+                <tr><td colspan="6" class="table-empty">No location data yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SETTINGS ── -->
+      <section class="panel" id="panel-settings">
+        <div class="content-card" style="max-width:520px">
+          <div class="card-header">
+            <h2 class="card-title">Backend Connection</h2>
+            <span class="card-sub">Connect to your self-hosted backend server</span>
+          </div>
+          <div class="settings-form">
+            <div class="form-group">
+              <label class="form-label">Backend URL</label>
+              <input type="text" id="settingsUrl" class="form-input" placeholder="http://localhost:4000">
+              <span class="form-hint">Use your PC's local IP when connecting from phone (e.g. http://192.168.1.10:4000)</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">API Bearer Token</label>
+              <input type="password" id="settingsToken" class="form-input" placeholder="32+ character token from .env">
+              <span class="form-hint">Must match API_TOKEN in your backend .env file</span>
+            </div>
+            <div id="settingsTestResult" class="test-result hidden"></div>
+            <div class="settings-actions">
+              <button class="secondary-btn" id="testConnBtn">Test Connection</button>
+              <button class="primary-btn" id="saveSettingsBtn">Save &amp; Reconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-card" style="max-width:520px;margin-top:16px">
+          <div class="card-header">
+            <h2 class="card-title">About</h2>
+          </div>
+          <p style="color:var(--text-secondary);font-size:13px;line-height:1.6">
+            Google Transfer is a <strong>self-hosted</strong> personal device monitor. All data stays on your local network.<br><br>
+            Data auto-expires after 7 days via MongoDB TTL indexes.
+          </p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

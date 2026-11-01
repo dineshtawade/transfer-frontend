@@ -1,0 +1,17 @@
+{
+  "name": "google-transfer-frontend",
+  "version": "1.0.0",
+  "description": "Live monitor dashboard for Google Transfer app data",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "dashboard",
+    "monitor",
+    "google-transfer"
+  ],
+  "author": "",
+  "license": "ISC"
+}
