@@ -7,12 +7,13 @@
 
   // ═══ STATE ═══════════════════════════════════════════════════════════════════
   const S = {
-    serverUrl: localStorage.getItem('gt_url') || 'https://transfer-backend-ii1e.onrender.com/',
-    apiToken: localStorage.getItem('gt_token') || '',
+    serverUrl: localStorage.getItem('gt_url') || 'https://transfer-backend-ii1e.onrender.com',
+    apiToken: localStorage.getItem('gt_token') || '155cdf21692f77bab2bed444a10eb33c',
     device: localStorage.getItem('gt_device') || 'all',
     panel: 'overview',
     ws: null,
     wsRetries: 0,
+    
     fetching: false,
     lastSynced: null,
     devices: [],
@@ -139,7 +140,12 @@
 
   async function api(path, opts = {}) {
     const url = S.serverUrl.replace(/\/+$/, '') + path;
-    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${S.apiToken}`, ...(opts.headers || {}) };
+    // Only send Authorization header if token is set
+    const baseHeaders = { 'Content-Type': 'application/json' };
+    if (S.apiToken && S.apiToken.trim()) {
+      baseHeaders['Authorization'] = `Bearer ${S.apiToken.trim()}`;
+    }
+    const headers = { ...baseHeaders, ...(opts.headers || {}) };
     const res = await fetch(url, { ...opts, headers });
     if (!res.ok) {
       const body = await res.json().catch(() => null);
